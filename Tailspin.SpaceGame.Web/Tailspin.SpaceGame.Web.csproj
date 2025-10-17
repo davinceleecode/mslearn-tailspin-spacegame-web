@@ -11,7 +11,7 @@
 
 	<!-- Add this ItemGroup for the Models artifact -->
 	<ItemGroup>
-		<PackageReference Include="TailSpin.SpaceGame.Web.Models" Version="1.0.0-CI-20251017-150012" />
+		<PackageReference Include="TailSpin.SpaceGame.Web.Models" Version="*" />
 	</ItemGroup>
 	
 </Project>
