@@ -1,9 +1,9 @@
 trigger:
   - "*"
 
-# 🧠 Use your self-hosted agent pool
+# Use your self-hosted agent pool
 pool:
-  name: "davinceleecode-remote-agent" # <-- replace with your actual pool name
+  name: "davinceleecode-remote-agent"
 
 variables:
   buildConfiguration: "Release"
@@ -17,17 +17,17 @@ steps:
     inputs:
       version: "$(dotnetSdkVersion)"
 
-  # 🧰 Install NuGet (for Azure Artifacts compatibility)
+  # 🧰 Install NuGet (for Azure Artifacts)
   - task: NuGetToolInstaller@1
     displayName: "Install NuGet"
 
-  # 🧱 Restore dependencies from Azure Artifacts feed
-  - task: NuGetCommand@2
-    displayName: "Restore project dependencies from Azure Artifacts"
+  # 🔄 Restore all project dependencies (includes Tailspin.SpaceGame.Web.Models package)
+  - task: DotNetCoreCLI@2
+    displayName: "Restore project dependencies"
     inputs:
-      command: "restore"
-      restoreSolution: "**/*.sln"
-      feedsToUse: "select"
+      command: restore
+      projects: "**/*.csproj"
+      feedsToUse: select
       vstsFeed: "$(System.TeamProject)/Tailspin.SpaceGame.Web.Models"
 
   # 🏷️ Write build info
@@ -39,7 +39,7 @@ steps:
   - task: DotNetCoreCLI@2
     displayName: "Build the project - $(buildConfiguration)"
     inputs:
-      command: "build"
+      command: build
       arguments: "--no-restore --configuration $(buildConfiguration)"
       projects: "**/*.csproj"
 
@@ -47,7 +47,7 @@ steps:
   - task: DotNetCoreCLI@2
     displayName: "Publish the project - $(buildConfiguration)"
     inputs:
-      command: "publish"
+      command: publish
       projects: "**/*.csproj"
       publishWebProjects: false
       arguments: "--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)"
