@@ -1,7 +1,7 @@
 trigger:
   - "*"
 
-# Use your self-hosted agent pool
+# Use self-hosted agent
 pool:
   name: "davinceleecode-remote-agent"
 
@@ -11,47 +11,46 @@ variables:
   wwwrootDir: "Tailspin.SpaceGame.Web/wwwroot"
 
 steps:
-  # Install the .NET SDK
+  # Install .NET SDK
   - task: UseDotNet@2
     displayName: "Use .NET SDK $(dotnetSdkVersion)"
     inputs:
       version: "$(dotnetSdkVersion)"
 
-  # Install NuGet tool (latest supported)
+  # Install NuGet tool
   - task: NuGetToolInstaller@1
     displayName: "Install NuGet"
 
-  # Restore dependencies from Azure Artifacts (including Tailspin.SpaceGame.Web.Models)
+  # Restore NuGet packages (this is critical to generate project.assets.json)
   - task: NuGetCommand@2
     displayName: "Restore NuGet packages"
     inputs:
       command: restore
       restoreSolution: "**/*.sln"
       feedsToUse: select
-      # Replace with your actual feed name in the project
       vstsFeed: "AzureDevOpsUpskilling/Tailspin.SpaceGame.Web.Models"
 
-  # Optional: Write build info file
+  # Optional: write build info
   - script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'
     displayName: "Write build info"
     workingDirectory: $(wwwrootDir)
 
-  # Build .NET project
+  # Build project
   - task: DotNetCoreCLI@2
     displayName: "Build the project - $(buildConfiguration)"
     inputs:
       command: build
       projects: "**/*.csproj"
-      arguments: "--no-restore --configuration $(buildConfiguration)"
+      arguments: "--configuration $(buildConfiguration)"
 
-  # Publish .NET project
+  # Publish project
   - task: DotNetCoreCLI@2
     displayName: "Publish the project - $(buildConfiguration)"
     inputs:
       command: publish
       projects: "**/*.csproj"
       publishWebProjects: false
-      arguments: "--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)"
+      arguments: "--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)"
       zipAfterPublish: true
 
   # Publish artifacts
