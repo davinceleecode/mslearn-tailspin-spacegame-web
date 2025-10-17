@@ -1,57 +1,77 @@
 trigger:
-- '*'
+  - "*"
 
+# 🧠 Use your self-hosted agent pool
 pool:
-  vmImage: 'ubuntu-20.04'
-  demands:
-  - npm
+  name: "davinceleecode-remote-agent" # <-- replace with your actual pool name
 
 variables:
-  buildConfiguration: 'Release'
-  wwwrootDir: 'Tailspin.SpaceGame.Web/wwwroot'
-  dotnetSdkVersion: '6.x'
+  buildConfiguration: "Release"
+  wwwrootDir: "Tailspin.SpaceGame.Web/wwwroot"
+  dotnetSdkVersion: "8.x"
 
 steps:
-- task: UseDotNet@2
-  displayName: 'Use .NET SDK $(dotnetSdkVersion)'
-  inputs:
-    version: '$(dotnetSdkVersion)'
+  # 🧩 Install .NET SDK
+  - task: UseDotNet@2
+    displayName: "Use .NET SDK $(dotnetSdkVersion)"
+    inputs:
+      version: "$(dotnetSdkVersion)"
 
-- task: NuGetToolInstaller@0
-  inputs:
-    versionSpec: '5.9.1'
+  # 🧰 Install NuGet (for Azure Artifacts compatibility)
+  - task: NuGetToolInstaller@1
+    displayName: "Install NuGet"
 
-- task: Npm@1
-  displayName: 'Run npm install'
-  inputs:
-    verbose: false
+  # 🧱 Restore dependencies from Azure Artifacts feed
+  - task: NuGetCommand@2
+    displayName: "Restore project dependencies from Azure Artifacts"
+    inputs:
+      command: "restore"
+      restoreSolution: "**/*.sln"
+      feedsToUse: "select"
+      vstsFeed: "$(System.TeamProject)/Tailspin.SpaceGame.Web.Models"
 
-- script: './node_modules/.bin/node-sass $(wwwrootDir) --output $(wwwrootDir)'
-  displayName: 'Compile Sass assets'
+  # 🧑‍💻 Install npm dependencies
+  - task: Npm@1
+    displayName: "Run npm install"
+    inputs:
+      workingDir: "Tailspin.SpaceGame.Web"
+      verbose: false
 
-- task: gulp@1
-  displayName: 'Run gulp tasks'
+  # 🎨 Compile Sass assets
+  - script: "./node_modules/.bin/node-sass $(wwwrootDir) --output $(wwwrootDir)"
+    displayName: "Compile Sass assets"
 
-- script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'
-  displayName: 'Write build info'
-  workingDirectory: $(wwwrootDir)
+  # 🧹 Run gulp tasks
+  - task: Gulp@1
+    displayName: "Run gulp tasks"
+    inputs:
+      gulpFile: "Tailspin.SpaceGame.Web/gulpfile.js"
+      targets: "default"
 
-- task: DotNetCoreCLI@2
-  displayName: 'Build the project - $(buildConfiguration)'
-  inputs:
-    command: 'build'
-    arguments: '--no-restore --configuration $(buildConfiguration)'
-    projects: '**/*.csproj'
+  # 🏷️ Write build info
+  - script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'
+    displayName: "Write build info"
+    workingDirectory: $(wwwrootDir)
 
-- task: DotNetCoreCLI@2
-  displayName: 'Publish the project - $(buildConfiguration)'
-  inputs:
-    command: 'publish'
-    projects: '**/*.csproj'
-    publishWebProjects: false
-    arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)'
-    zipAfterPublish: true
+  # ⚙️ Build project
+  - task: DotNetCoreCLI@2
+    displayName: "Build the project - $(buildConfiguration)"
+    inputs:
+      command: "build"
+      arguments: "--no-restore --configuration $(buildConfiguration)"
+      projects: "**/*.csproj"
 
-- task: PublishBuildArtifacts@1
-  displayName: 'Publish Artifact: drop'
-  condition: succeeded()
+  # 📦 Publish project
+  - task: DotNetCoreCLI@2
+    displayName: "Publish the project - $(buildConfiguration)"
+    inputs:
+      command: "publish"
+      projects: "**/*.csproj"
+      publishWebProjects: false
+      arguments: "--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)"
+      zipAfterPublish: true
+
+  # 🚀 Publish build artifacts
+  - task: PublishBuildArtifacts@1
+    displayName: "Publish Artifact: drop"
+    condition: succeeded()
