@@ -7,43 +7,44 @@ pool:
 
 variables:
   buildConfiguration: "Release"
-  wwwrootDir: "Tailspin.SpaceGame.Web/wwwroot"
   dotnetSdkVersion: "8.x"
+  wwwrootDir: "Tailspin.SpaceGame.Web/wwwroot"
 
 steps:
-  # 🧩 Install .NET SDK
+  # Install the .NET SDK
   - task: UseDotNet@2
     displayName: "Use .NET SDK $(dotnetSdkVersion)"
     inputs:
       version: "$(dotnetSdkVersion)"
 
-  # 🧰 Install NuGet (for Azure Artifacts)
+  # Install NuGet tool (latest supported)
   - task: NuGetToolInstaller@1
     displayName: "Install NuGet"
 
-  # 🔄 Restore all project dependencies (includes Tailspin.SpaceGame.Web.Models package)
-  - task: DotNetCoreCLI@2
-    displayName: "Restore project dependencies"
+  # Restore dependencies from Azure Artifacts (including Tailspin.SpaceGame.Web.Models)
+  - task: NuGetCommand@2
+    displayName: "Restore NuGet packages"
     inputs:
       command: restore
-      projects: "**/*.csproj"
+      restoreSolution: "**/*.sln"
       feedsToUse: select
-      vstsFeed: "$(System.TeamProject)/Tailspin.SpaceGame.Web.Models"
+      # Replace with your actual feed name in the project
+      vstsFeed: "AzureDevOpsUpskilling/Tailspin.SpaceGame.Web.Models"
 
-  # 🏷️ Write build info
+  # Optional: Write build info file
   - script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'
     displayName: "Write build info"
     workingDirectory: $(wwwrootDir)
 
-  # ⚙️ Build project
+  # Build .NET project
   - task: DotNetCoreCLI@2
     displayName: "Build the project - $(buildConfiguration)"
     inputs:
       command: build
-      arguments: "--no-restore --configuration $(buildConfiguration)"
       projects: "**/*.csproj"
+      arguments: "--no-restore --configuration $(buildConfiguration)"
 
-  # 📦 Publish project
+  # Publish .NET project
   - task: DotNetCoreCLI@2
     displayName: "Publish the project - $(buildConfiguration)"
     inputs:
@@ -53,7 +54,7 @@ steps:
       arguments: "--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)"
       zipAfterPublish: true
 
-  # 🚀 Publish build artifacts
+  # Publish artifacts
   - task: PublishBuildArtifacts@1
     displayName: "Publish Artifact: drop"
     condition: succeeded()
