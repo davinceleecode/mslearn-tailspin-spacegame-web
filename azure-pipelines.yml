@@ -7,51 +7,49 @@ pool:
 variables:
   buildConfiguration: "Release"
   dotnetSdkVersion: "8.x"
-  wwwrootDir: "Tailspin.SpaceGame.Web/wwwroot"
 
 steps:
-  # 🧠 Install .NET SDK
+  # Use correct .NET SDK
   - task: UseDotNet@2
     displayName: "Use .NET SDK $(dotnetSdkVersion)"
     inputs:
-      packageType: sdk
       version: "$(dotnetSdkVersion)"
 
-  # 🔑 Authenticate to private feed (this is the missing step!)
-  - task: NuGetAuthenticate@1
-    displayName: "Authenticate to Azure Artifacts feed"
+  # Install NuGet
+  - task: NuGetToolInstaller@1
+    displayName: "Install NuGet"
 
-  # 🔄 Restore NuGet packages from private + public feeds
-  - task: DotNetCoreCLI@2
+  # 🔥 Add the Azure Artifacts feed (this is the key part)
+  - task: NuGetAuthenticate@1
+    displayName: "Authenticate to Azure Artifacts"
+
+  # Restore NuGet packages using your private feed
+  - task: NuGetCommand@2
     displayName: "Restore NuGet packages"
     inputs:
-      command: restore
-      projects: "**/*.csproj"
+      command: "restore"
+      restoreSolution: "**/*.sln"
+      feedsToUse: "select"
+      vstsFeed: "AzureDevOpsUpskilling/Tailspin.SpaceGame.Web.Models"
 
-  # 🧾 Write build info
-  - script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'
-    displayName: "Write build info"
-    workingDirectory: $(wwwrootDir)
-
-  # 🏗 Build
+  # Build
   - task: DotNetCoreCLI@2
-    displayName: "Build project - $(buildConfiguration)"
+    displayName: "Build the project"
     inputs:
-      command: build
+      command: "build"
       projects: "**/*.csproj"
       arguments: "--configuration $(buildConfiguration)"
 
-  # 🚀 Publish project output
+  # Publish
   - task: DotNetCoreCLI@2
-    displayName: "Publish project - $(buildConfiguration)"
+    displayName: "Publish the project"
     inputs:
-      command: publish
-      publishWebProjects: false
+      command: "publish"
       projects: "**/*.csproj"
       arguments: "--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)"
       zipAfterPublish: true
 
-  # 📦 Upload published artifact
+  # Publish artifact
   - task: PublishBuildArtifacts@1
     displayName: "Publish Artifact: drop"
     condition: succeeded()
