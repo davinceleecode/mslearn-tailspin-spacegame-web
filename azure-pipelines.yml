@@ -30,24 +30,6 @@ steps:
       feedsToUse: "select"
       vstsFeed: "$(System.TeamProject)/Tailspin.SpaceGame.Web.Models"
 
-  # 🧑‍💻 Install npm dependencies
-  - task: Npm@1
-    displayName: "Run npm install"
-    inputs:
-      workingDir: "Tailspin.SpaceGame.Web"
-      verbose: false
-
-  # 🎨 Compile Sass assets
-  - script: "./node_modules/.bin/node-sass $(wwwrootDir) --output $(wwwrootDir)"
-    displayName: "Compile Sass assets"
-
-  # 🧹 Run gulp tasks
-  - task: Gulp@1
-    displayName: "Run gulp tasks"
-    inputs:
-      gulpFile: "Tailspin.SpaceGame.Web/gulpfile.js"
-      targets: "default"
-
   # 🏷️ Write build info
   - script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'
     displayName: "Write build info"
