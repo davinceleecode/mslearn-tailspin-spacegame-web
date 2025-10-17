@@ -21,7 +21,7 @@ steps:
   - task: NuGetToolInstaller@1
     displayName: "Install NuGet"
 
-  # Restore NuGet packages (this is critical to generate project.assets.json)
+  # Restore NuGet packages (critical for project.assets.json)
   - task: NuGetCommand@2
     displayName: "Restore NuGet packages"
     inputs:
